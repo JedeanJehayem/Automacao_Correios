@@ -1,0 +1,21 @@
+{
+  "codigoObjeto": "AP612167199BR",
+  "eventos": [
+    {
+      "status": "Objeto em transferência - por favor aguarde",
+      "descricao": null,
+      "dataHora": "2026-10-16T14:13:00",
+      "local": null,
+      "origem": "Unidade de Tratamento, Rio de Janeiro",
+      "destino": "Unidade de Tratamento, São Paulo"
+    },
+    {
+      "status": "Etiqueta emitida",
+      "descricao": "Aguardando postagem pelo remetente",
+      "dataHora": "2026-10-14T12:16:00",
+      "local": null,
+      "origem": null,
+      "destino": null
+    }
+  ]
+}

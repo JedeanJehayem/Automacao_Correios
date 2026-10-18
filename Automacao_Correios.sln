@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36915.13 d17.14
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Automacao_Correios", "Automacao_Correios\Automacao_Correios.csproj", "{B95BF3DC-9CDB-41F5-ACE1-EFF59BB6C8B7}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Automacao_Correios.Tests", "Automacao_Correios.Tests\Automacao_Correios.Tests.csproj", "{449F4BF3-490E-4A1D-8AAB-DB02F42E1997}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B95BF3DC-9CDB-41F5-ACE1-EFF59BB6C8B7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B95BF3DC-9CDB-41F5-ACE1-EFF59BB6C8B7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B95BF3DC-9CDB-41F5-ACE1-EFF59BB6C8B7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B95BF3DC-9CDB-41F5-ACE1-EFF59BB6C8B7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{449F4BF3-490E-4A1D-8AAB-DB02F42E1997}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{449F4BF3-490E-4A1D-8AAB-DB02F42E1997}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{449F4BF3-490E-4A1D-8AAB-DB02F42E1997}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{449F4BF3-490E-4A1D-8AAB-DB02F42E1997}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {D11DE46E-DBFC-4532-AA38-CE98F8A68E5B}
+	EndGlobalSection
+EndGlobal

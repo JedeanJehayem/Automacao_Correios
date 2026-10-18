@@ -1,0 +1,21 @@
+# Compilação e IDE
+**/bin/
+**/obj/
+.vs/
+.vscode/
+*.user
+*.suo
+
+# Artefatos gerados pela automação
+Automacao_Correios/Captchas/
+Automacao_Correios/Resultados/
+Automacao_Correios/logs/
+
+# Publicação local
+publish/
+
+# Temporários
+tmp/
+*.tmp
+*.bak
+TestResults/
