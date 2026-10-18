@@ -2,7 +2,7 @@
 
 Aplicação RPA em C# que consulta códigos de rastreamento no portal dos Correios, resolve o CAPTCHA com OCR, abre o histórico completo e converte os eventos encontrados no DOM para arquivos JSON estruturados.
 
-O fluxo é totalmente automático. Códigos concluídos são registrados em uma planilha de controle para não serem processados novamente; códigos com erro continuam pendentes para uma execução futura.
+O fluxo é totalmente automático. A própria planilha de entrada guarda o controle: uma coluna `Status` registra `ok` para códigos concluídos, que não são processados novamente, e `erro` para códigos que continuam pendentes para uma execução futura.
 
 ## Tecnologias e decisões
 
@@ -10,7 +10,7 @@ O fluxo é totalmente automático. Códigos concluídos são registrados em uma 
 - **CefSharp/Chromium:** permite navegação real e interação programática com o DOM/JavaScript. Foi escolhido porque o portal depende do comportamento do navegador e de conteúdo dinâmico.
 - **DdddOcr.Net:** executa OCR local, sem enviar o CAPTCHA a serviços externos.
 - **OpenCvSharp:** gera versões em escala de cinza, contraste, limiarização e recortes para aumentar a diversidade das previsões.
-- **ClosedXML:** lê a planilha de entrada e mantém a planilha de controle sem exigir Microsoft Excel instalado.
+- **ClosedXML:** lê e atualiza a planilha de entrada (códigos e coluna `Status`) sem exigir Microsoft Excel instalado.
 - **xUnit:** valida as regras que não dependem do portal ou do navegador.
 
 A navegação, captura do CAPTCHA, OCR, extração do resultado, configuração, logs e controle foram separados para reduzir o acoplamento e facilitar testes e manutenção.
@@ -42,9 +42,9 @@ MANTER_NAVEGADOR_ABERTO=false
 | `TIMEOUT_EVENTOS_SEGUNDOS` | Tempo máximo para o resultado aparecer após a consulta. |
 | `MANTER_NAVEGADOR_ABERTO` | Quando `true`, mantém a janela aberta para inspeção após o processamento. |
 
-## Entrada
+## Entrada e controle
 
-Sem argumentos, a aplicação lê `Automacao_Correios/input/transacoes.xlsx`. A primeira planilha deve ter o cabeçalho `Código de rastreamento` na célula A1 e um código por linha na coluna A.
+Sem argumentos, a aplicação lê e atualiza `Automacao_Correios/input/transacoes.xlsx`. A primeira planilha deve ter o cabeçalho `Código de rastreamento` na célula A1 e um código por linha na coluna A; a aplicação cria/mantém sozinha a coluna B (`Status`) na mesma planilha — não existe mais um arquivo de controle separado.
 
 Também é possível informar parâmetros diretamente:
 
@@ -58,11 +58,15 @@ O argumento `--codigo` pode ser repetido:
 dotnet run --project .\Automacao_Correios -- --codigo AP612167199BR --codigo NN437873753BR
 ```
 
+Nesse caso o controle (`Status`) é mantido em `Automacao_Correios/input/transacoes.xlsx` mesmo assim, adicionando os códigos informados caso ainda não existam na planilha.
+
 Para usar outra planilha:
 
 ```powershell
 dotnet run --project .\Automacao_Correios -- --arquivo C:\dados\transacoes.xlsx
 ```
+
+Nesse caso o controle é feito diretamente no arquivo informado em `--arquivo`, na mesma coluna `Status`.
 
 `--codigo` e `--arquivo` são mutuamente exclusivos. O formato SRO aceito é `AA123456789BR`.
 
@@ -85,8 +89,8 @@ dotnet publish .\Automacao_Correios\Automacao_Correios.csproj -c Release -r win-
 ## Fluxo da automação
 
 1. Carrega a configuração e cria um log exclusivo da execução.
-2. Lê os códigos da linha de comando ou da planilha.
-3. Mescla o controle distribuído com o controle persistente e ignora somente registros com status `ok`.
+2. Lê os códigos da linha de comando ou da coluna `Código de rastreamento` da planilha.
+3. Mescla a planilha de entrada distribuída com a persistente (quando usa o caminho padrão) e ignora somente registros com status `ok` na coluna `Status`.
 4. Valida o formato do código e abre o portal no Chromium.
 5. Aguarda o formulário e a imagem do CAPTCHA estarem realmente disponíveis.
 6. Captura os pixels originais do CAPTCHA pelo canvas; se isso falhar, usa screenshot da região do elemento.
@@ -104,9 +108,9 @@ As pastas são criadas no diretório persistente do projeto:
 - `Resultados/`: um JSON UTF-8 por código;
 - `Captchas/`: imagem original, variantes e diagnóstico do OCR;
 - `logs/`: um arquivo por execução no formato `execucao_dd-MM-yyyy_HH-mm.log`;
-- `controle/controle.xlsx`: código na primeira coluna e status na segunda.
+- `input/transacoes.xlsx`: código na coluna A (`Código de rastreamento`) e status na coluna B (`Status`), atualizado pela própria aplicação.
 
-O status `ok` impede novo processamento. Status vazio ou `erro` torna o código elegível para uma nova execução. Ao mesclar controles, `ok` tem prioridade sobre `erro`, evitando regressão de um item já concluído.
+O status `ok` impede novo processamento. Status vazio ou `erro` torna o código elegível para uma nova execução. Ao mesclar a planilha distribuída com a persistente, `ok` tem prioridade sobre `erro`, evitando regressão de um item já concluído.
 
 Um arquivo versionado de referência está em `exemplos/resultado-exemplo.json`.
 
@@ -136,7 +140,7 @@ Execute:
 dotnet test .\Automacao_Correios.sln -c Release
 ```
 
-Os testes cobrem validação e normalização de códigos, leitura do `.env`, transformação de eventos, normalização/distância usadas pelo OCR e regras da planilha de controle. A integração real com o portal e o reconhecimento de CAPTCHAs variáveis exigem teste de execução, pois dependem de conteúdo externo.
+Os testes cobrem validação e normalização de códigos, leitura do `.env`, transformação de eventos, normalização/distância usadas pelo OCR e as regras de controle (coluna `Status`) da planilha de entrada. A integração real com o portal e o reconhecimento de CAPTCHAs variáveis exigem teste de execução, pois dependem de conteúdo externo.
 
 ## Limitações conhecidas
 

@@ -22,21 +22,26 @@ public class Automacao
     private Configuracao? _configuracao;
     private int _tentativasOcr;
     private int _consultasConcluidas;
+    private string? _caminhoArquivoAtivo;
 
     public bool ManterNavegadorAberto =>
         _configuracao?.ManterNavegadorAberto ?? false;
 
-    private string CaminhoControle => Path.Combine(
+    private string CaminhoInput => Path.Combine(
         DiretoriosAplicacao.ObterDiretorioPersistente(),
-        "controle",
-        "controle.xlsx"
+        "input",
+        "transacoes.xlsx"
     );
 
-    private string CaminhoControleDistribuido => Path.Combine(
+    private string CaminhoInputDistribuido => Path.Combine(
         AppContext.BaseDirectory,
-        "controle",
-        "controle.xlsx"
+        "input",
+        "transacoes.xlsx"
     );
+
+    private string CaminhoArquivoAtivo => _caminhoArquivoAtivo ??
+        throw new InvalidOperationException(
+            "Nenhuma transação foi obtida ainda.");
 
     // Construtor
     public Automacao(
@@ -102,13 +107,21 @@ public class Automacao
 
         if (_filaTransacoes == null)
         {
-            ControleTransacoes.MesclarHistorico(
-                CaminhoControleDistribuido,
-                CaminhoControle
-            );
+            bool usaArquivoPadrao = _argumentos.CaminhoArquivo is null;
+
+            _caminhoArquivoAtivo = _argumentos.CaminhoArquivo ??
+                CaminhoInput;
+
+            if (usaArquivoPadrao)
+            {
+                ControleTransacoes.MesclarHistorico(
+                    CaminhoInputDistribuido,
+                    CaminhoInput
+                );
+            }
 
             Console.WriteLine(
-                $"[CONTROLE] Arquivo persistente: {CaminhoControle}");
+                $"[CONTROLE] Planilha de entrada: {_caminhoArquivoAtivo}");
 
             IReadOnlyList<string> codigos;
 
@@ -120,20 +133,13 @@ public class Automacao
             }
             else
             {
-                string caminhoExcel = _argumentos.CaminhoArquivo ??
-                    Path.Combine(
-                        DiretoriosAplicacao.ObterDiretorioPersistente(),
-                        "input",
-                        "transacoes.xlsx"
-                    );
-
-                codigos = ExcelReader.Read(caminhoExcel);
-                Console.WriteLine($"[GET] Entrada: {caminhoExcel}");
+                codigos = ExcelReader.Read(_caminhoArquivoAtivo);
+                Console.WriteLine($"[GET] Entrada: {_caminhoArquivoAtivo}");
             }
 
             var codigosPendentes =
                 ControleTransacoes.ObterPendentes(
-                    CaminhoControle,
+                    _caminhoArquivoAtivo,
                     codigos
                 );
 
@@ -233,7 +239,7 @@ public class Automacao
         {
             Console.WriteLine($"[VALIDAÇÃO] {ex.Message}");
             ControleTransacoes.MarcarComoErro(
-                CaminhoControle,
+                CaminhoArquivoAtivo,
                 transaction
             );
             return false;
@@ -255,7 +261,7 @@ public class Automacao
                 await ProcessTransaction(transaction);
 
                 ControleTransacoes.MarcarComoOk(
-                    CaminhoControle,
+                    CaminhoArquivoAtivo,
                     transaction
                 );
 
@@ -270,7 +276,7 @@ public class Automacao
                 if (ex is FalhaPermanenteTransacaoException)
                 {
                     ControleTransacoes.MarcarComoErro(
-                        CaminhoControle,
+                        CaminhoArquivoAtivo,
                         transaction
                     );
 
@@ -284,7 +290,7 @@ public class Automacao
                 if (tentativa == maxTentativas)
                 {
                     ControleTransacoes.MarcarComoErro(
-                        CaminhoControle,
+                        CaminhoArquivoAtivo,
                         transaction
                     );
 

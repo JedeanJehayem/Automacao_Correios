@@ -12,7 +12,7 @@ public sealed class ControleTransacoesTests : IDisposable
     [Fact]
     public void ObterPendentes_DeveRemoverSomenteCodigosOk()
     {
-        string caminho = Path.Combine(_diretorio, "controle.xlsx");
+        string caminho = Path.Combine(_diretorio, "transacoes.xlsx");
         string codigoOk = "NN437873753BR";
         string codigoErro = "AP612167199BR";
 

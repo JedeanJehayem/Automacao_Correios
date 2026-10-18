@@ -8,7 +8,9 @@ namespace AutomacaoRPA.Services;
 
 public static class ControleTransacoes
 {
-    private const string NomePlanilha = "Controle";
+    private const string NomePlanilhaPadrao = "Transacoes";
+    private const string CabecalhoCodigo = "Código de rastreamento";
+    private const string CabecalhoStatus = "Status";
     private const string StatusOk = "ok";
     private const string StatusErro = "erro";
 
@@ -27,34 +29,28 @@ public static class ControleTransacoes
         Directory.CreateDirectory(
             Path.GetDirectoryName(caminhoDestino) ??
             throw new InvalidOperationException(
-                "Diretório do controle não foi informado."));
+                "Diretório da planilha de entrada não foi informado."));
+
+        if (!File.Exists(caminhoDestino))
+        {
+            File.Copy(caminhoOrigem, caminhoDestino);
+
+            Console.WriteLine(
+                "[CONTROLE] Planilha distribuída copiada para o " +
+                "arquivo persistente.");
+
+            return;
+        }
 
         using var origem = new XLWorkbook(caminhoOrigem);
-        using var destino = File.Exists(caminhoDestino)
-            ? new XLWorkbook(caminhoDestino)
-            : new XLWorkbook();
+        using var destino = new XLWorkbook(caminhoDestino);
 
-        var planilhaOrigem = origem.Worksheets
-            .FirstOrDefault(aba =>
-                aba.Name.Equals(
-                    NomePlanilha,
-                    StringComparison.OrdinalIgnoreCase));
-
-        if (planilhaOrigem == null)
-            return;
-
-        var planilhaDestino = destino.Worksheets
-            .FirstOrDefault(aba =>
-                aba.Name.Equals(
-                    NomePlanilha,
-                    StringComparison.OrdinalIgnoreCase))
-            ?? destino.AddWorksheet(NomePlanilha);
+        var planilhaOrigem = origem.Worksheet(1);
+        var planilhaDestino = destino.Worksheet(1);
 
         PrepararCabecalho(planilhaDestino);
 
-        var linhasDestino = ObterLinhasPorCodigo(
-            planilhaDestino
-        );
+        var linhasDestino = ObterLinhasPorCodigo(planilhaDestino);
 
         bool alterado = false;
 
@@ -101,7 +97,7 @@ public static class ControleTransacoes
             alterado = true;
         }
 
-        if (!File.Exists(caminhoDestino) || alterado)
+        if (alterado)
         {
             AjustarVisual(planilhaDestino);
             destino.SaveAs(caminhoDestino);
@@ -125,18 +121,10 @@ public static class ControleTransacoes
         Directory.CreateDirectory(
             Path.GetDirectoryName(caminho) ??
             throw new InvalidOperationException(
-                "Diretório do controle não foi informado."));
+                "Diretório da planilha de entrada não foi informado."));
 
-        using var workbook = File.Exists(caminho)
-            ? new XLWorkbook(caminho)
-            : new XLWorkbook();
-
-        var planilha = workbook.Worksheets
-            .FirstOrDefault(aba =>
-                aba.Name.Equals(
-                    NomePlanilha,
-                    StringComparison.OrdinalIgnoreCase))
-            ?? workbook.AddWorksheet(NomePlanilha);
+        using var workbook = AbrirOuCriar(caminho);
+        var planilha = workbook.Worksheet(1);
 
         PrepararCabecalho(planilha);
 
@@ -199,18 +187,10 @@ public static class ControleTransacoes
         Directory.CreateDirectory(
             Path.GetDirectoryName(caminho) ??
             throw new InvalidOperationException(
-                "Diretório do controle não foi informado."));
+                "Diretório da planilha de entrada não foi informado."));
 
-        using var workbook = File.Exists(caminho)
-            ? new XLWorkbook(caminho)
-            : new XLWorkbook();
-
-        var planilha = workbook.Worksheets
-            .FirstOrDefault(aba =>
-                aba.Name.Equals(
-                    NomePlanilha,
-                    StringComparison.OrdinalIgnoreCase))
-            ?? workbook.AddWorksheet(NomePlanilha);
+        using var workbook = AbrirOuCriar(caminho);
+        var planilha = workbook.Worksheet(1);
 
         PrepararCabecalho(planilha);
 
@@ -229,6 +209,16 @@ public static class ControleTransacoes
 
         Console.WriteLine(
             $"[CONTROLE] {codigo} atualizado para: {status}");
+    }
+
+    private static XLWorkbook AbrirOuCriar(string caminho)
+    {
+        if (File.Exists(caminho))
+            return new XLWorkbook(caminho);
+
+        var workbook = new XLWorkbook();
+        workbook.AddWorksheet(NomePlanilhaPadrao);
+        return workbook;
     }
 
     private static Dictionary<string, int> ObterLinhasPorCodigo(
@@ -289,8 +279,10 @@ public static class ControleTransacoes
 
     private static void PrepararCabecalho(IXLWorksheet planilha)
     {
-        planilha.Cell(1, 1).Value = "Código";
-        planilha.Cell(1, 2).Value = "Status";
+        if (planilha.Cell(1, 1).IsEmpty())
+            planilha.Cell(1, 1).Value = CabecalhoCodigo;
+
+        planilha.Cell(1, 2).Value = CabecalhoStatus;
     }
 
     private static void AjustarVisual(IXLWorksheet planilha)
@@ -303,7 +295,7 @@ public static class ControleTransacoes
         cabecalho.Style.Alignment.Horizontal =
             XLAlignmentHorizontalValues.Center;
 
-        planilha.Column(1).Width = 28;
+        planilha.Column(1).Width = 30;
         planilha.Column(2).Width = 14;
         planilha.SheetView.FreezeRows(1);
         planilha.ShowGridLines = false;
