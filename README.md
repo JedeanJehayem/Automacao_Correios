@@ -101,6 +101,32 @@ dotnet publish .\Automacao_Correios\Automacao_Correios.csproj -c Release -r win-
 11. Converte todos os elementos `li.step` para o modelo JSON e salva o resultado.
 12. Atualiza o controle como `ok` ou `erro` e segue automaticamente para o próximo código.
 
+## Localização de elementos e extração dos dados
+
+A identificação dos elementos é feita injetando JavaScript no DOM já renderizado pelo Chromium (`EvaluateScriptAsync`), e não a partir do HTML estático — o que é necessário porque o portal carrega formulário, CAPTCHA e resultado de forma dinâmica.
+
+Seletores usados nas etapas principais:
+
+- `#objeto`: campo de código de rastreamento (preenchido caractere a caractere, disparando eventos `input`/`change` para imitar digitação real);
+- `#captcha_image`: imagem do CAPTCHA, lida via `<canvas>` (pixels originais) com *fallback* para `CaptureScreenshotAsync` quando o canvas não está disponível;
+- `#captcha` e `#b-pesquisar`: campo do CAPTCHA e botão "Consultar";
+- `ul.ship-steps > li.step`: cada item da lista é um evento do histórico; dentro dele, `.step-content p.text` fornece os textos, distinguindo cabeçalho (`p.text-head`, que vira o status) dos demais parágrafos (conteúdo complementar);
+- `#a-ver-mais`: quando presente, é clicado automaticamente para expandir o histórico completo antes de extrair os eventos, evitando capturar uma lista parcial.
+
+Como o portal não expõe um seletor estável para mensagens de erro, elas são detectadas varrendo o texto normalizado da página (minúsculas, sem acentos) em busca de padrões conhecidos — CAPTCHA recusado, objeto não encontrado/código inválido, indisponibilidade temporária — classificando cada caso como falha permanente ou transitória antes mesmo de tentar extrair eventos.
+
+### Transformação em JSON
+
+Cada `li.step` é primeiro convertido em uma lista bruta de itens (tipo `head`/`content`, texto normalizado e se contém link), preservando a ordem em que aparecem na página. A partir daí:
+
+- o primeiro item `head` vira o `status` do evento;
+- entre os conteúdos, é localizado um texto no formato `dd/MM/yyyy HH:mm` (via regex) e convertido para `dataHora`;
+- conteúdos que começam com `"de "` ou `"para "` são interpretados como `origem`/`destino`; quando nenhum dos dois aparece, o primeiro conteúdo remanescente vira `local`;
+- cabeçalhos extras (além do status) e conteúdos remanescentes — exceto links de pesquisa de satisfação, filtrados explicitamente — são concatenados em `descricao`;
+- eventos sem `status` identificado são descartados, para não poluir o resultado com ruído da página.
+
+O resultado (`codigoObjeto` + lista de `eventos`) é serializado com `System.Text.Json` (camelCase, indentado, UTF-8 sem escapar acentuação) e salvo em `Resultados/<codigo>.json`.
+
 ## Saídas e controle
 
 As pastas são criadas no diretório persistente do projeto:
