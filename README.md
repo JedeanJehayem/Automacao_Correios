@@ -22,7 +22,7 @@ A navegação, captura do CAPTCHA, OCR, extração do resultado, configuração,
 - acesso à internet para abrir o portal dos Correios e restaurar os pacotes NuGet;
 - execução em arquitetura x64.
 
-Não é necessário instalar Chrome, Python, Excel ou um mecanismo OCR externo. As dependências são restauradas pelo NuGet.
+Não é necessário instalar Chrome, Python, Excel ou um mecanismo OCR externo. As dependências são restauradas pelo NuGet, incluindo o runtime do Chromium Embedded Framework (CefSharp) — por isso o projeto define `<RuntimeIdentifier>win-x64</RuntimeIdentifier>`, necessário para o `libcef.dll` e demais binários nativos serem copiados para a pasta de saída; sem isso a aplicação compila normalmente mas falha ao iniciar o navegador (`FileNotFoundException` ao carregar `CefSharp.Core.Runtime.dll`).
 
 ## Configuração
 
